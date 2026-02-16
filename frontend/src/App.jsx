@@ -6,8 +6,11 @@ import Header from './components/Header'
 import Stats from './components/Stats'
 import Features from './components/Features'
 import Footer from './components/Footer'
+import { mockPredict } from './utils/mockPredict'
 
-const API_URL = 'http://localhost:8000'
+// Use environment variable or default to localhost
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+const USE_DEMO_MODE = import.meta.env.VITE_DEMO_MODE === 'true' || !API_URL.includes('localhost')
 
 function App() {
   const [selectedFile, setSelectedFile] = useState(null)
@@ -43,15 +46,24 @@ function App() {
     setResult(null)
     setShowSuccess(false)
 
-    const formData = new FormData()
-    formData.append('file', selectedFile)
-
     try {
-      const response = await axios.post(`${API_URL}/predict`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      })
+      let response
+
+      if (USE_DEMO_MODE) {
+        // Use mock prediction for GitHub Pages demo
+        const data = await mockPredict(selectedFile)
+        response = { data }
+      } else {
+        // Use real API
+        const formData = new FormData()
+        formData.append('file', selectedFile)
+        response = await axios.post(`${API_URL}/predict`, formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        })
+      }
+
       setResult(response.data)
       setShowSuccess(true)
       
@@ -65,10 +77,14 @@ function App() {
         document.getElementById('results')?.scrollIntoView({ behavior: 'smooth' })
       }, 100)
     } catch (err) {
-      setError(
-        err.response?.data?.detail || 
-        'Failed to analyze image. Please ensure the backend server is running.'
-      )
+      if (USE_DEMO_MODE) {
+        setError('Failed to analyze image. Please try again.')
+      } else {
+        setError(
+          err.response?.data?.detail || 
+          'Failed to analyze image. Please ensure the backend server is running.'
+        )
+      }
     } finally {
       setLoading(false)
     }
@@ -84,6 +100,14 @@ function App() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {USE_DEMO_MODE && (
+        <div className="bg-yellow-50 border-b border-yellow-200 py-2 px-4 text-center">
+          <p className="text-sm text-yellow-800">
+            🎭 <strong>Demo Mode:</strong> This is a demonstration version. Predictions are simulated. 
+            For real AI predictions, run the backend server locally.
+          </p>
+        </div>
+      )}
       <Header />
       
       {/* Hero Section */}
