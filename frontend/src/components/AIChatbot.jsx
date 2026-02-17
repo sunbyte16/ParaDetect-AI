@@ -1,9 +1,11 @@
 import { useState, useRef, useEffect } from 'react'
 import axios from 'axios'
+import { useAuth } from '../context/AuthContext'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 
 export default function AIChatbot({ isOpen, onClose, userPrediction = null }) {
+  const { isAuthenticated } = useAuth()
   const [messages, setMessages] = useState([
     {
       type: 'ai',
@@ -59,7 +61,9 @@ export default function AIChatbot({ isOpen, onClose, userPrediction = null }) {
       const formData = new FormData()
       formData.append('message', textToSend)
 
-      const response = await axios.post(`${API_URL}/api/chatbot`, formData, {
+      // Use authenticated endpoint if user is logged in, otherwise use public endpoint
+      const endpoint = isAuthenticated ? '/api/chatbot' : '/api/chatbot/public'
+      const response = await axios.post(`${API_URL}${endpoint}`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       })
 

@@ -19,13 +19,16 @@ export const AuthProvider = ({ children }) => {
   const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 
   useEffect(() => {
+    const token = localStorage.getItem('token')
     if (token) {
+      // Set axios default header
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`
+      setToken(token)
       fetchUser()
     } else {
       setLoading(false)
     }
-  }, [token])
+  }, [])
 
   const fetchUser = async () => {
     try {
@@ -55,11 +58,13 @@ export const AuthProvider = ({ children }) => {
     return userData
   }
 
-  const register = async (email, password, fullName) => {
+  const register = async (email, password, fullName, role = 'patient', phone = null) => {
     const response = await axios.post(`${API_URL}/api/auth/register`, {
       email,
       password,
-      full_name: fullName
+      full_name: fullName,
+      role: role,
+      phone: phone
     })
     const { access_token, user: userData } = response.data
     
@@ -78,12 +83,24 @@ export const AuthProvider = ({ children }) => {
     delete axios.defaults.headers.common['Authorization']
   }
 
+  const sendOTP = async (phone) => {
+    const response = await axios.post(`${API_URL}/api/auth/send-otp`, { phone })
+    return response.data
+  }
+
+  const verifyOTP = async (phone, otp) => {
+    const response = await axios.post(`${API_URL}/api/auth/verify-otp`, { phone, otp })
+    return response.data
+  }
+
   const value = {
     user,
     loading,
     login,
     register,
     logout,
+    sendOTP,
+    verifyOTP,
     isAuthenticated: !!user,
     isAdmin: user?.role === 'admin'
   }

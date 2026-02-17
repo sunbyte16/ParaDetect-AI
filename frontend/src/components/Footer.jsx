@@ -54,7 +54,7 @@ export default function Footer() {
         <div className="border-t border-gray-800 pt-8">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <p className="text-gray-400 text-sm">
-              © 2026 ParaDetect AI. Built with ❤️ using React, FastAPI, and PyTorch.
+              © 2k26 ParaDetect AI. Created by ❤️ BitBuilder Team.
             </p>
             <div className="flex gap-6 text-sm text-gray-400">
               <a href="#" className="hover:text-white transition-colors">Privacy Policy</a>

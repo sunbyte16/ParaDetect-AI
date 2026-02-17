@@ -34,4 +34,4 @@ echo.
 echo Press Ctrl+C to stop the server
 echo.
 
-python app_enhanced.py
+python app.py

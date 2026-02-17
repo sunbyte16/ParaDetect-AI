@@ -31,6 +31,15 @@ if not exist "uploads\images" mkdir uploads\images
 if not exist "uploads\gradcam" mkdir uploads\gradcam
 
 echo.
+echo Creating .env file from example...
+if not exist ".env" (
+    copy .env.example .env
+    echo ✅ Created .env file - Please update with your settings
+) else (
+    echo ℹ️  .env file already exists
+)
+
+echo.
 echo Step 2: Setting up Frontend...
 cd ..\frontend
 

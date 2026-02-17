@@ -3,20 +3,54 @@ AI Chatbot powered by Google Gemini AI
 Provides intelligent medical advice, consolation, and support
 """
 
-import google.generativeai as genai
+try:
+    import google.generativeai as genai
+    GEMINI_AVAILABLE = True
+    print("✅ Google Generative AI package loaded successfully")
+except ImportError:
+    try:
+        import google.genai as genai
+        GEMINI_AVAILABLE = True
+        print("✅ Using new google.genai package")
+    except ImportError:
+        GEMINI_AVAILABLE = False
+        print("❌ No Google AI package available. Install google-generativeai or google-genai")
+
 from typing import Optional, Dict
+import os
 
 # Configure Gemini AI
-GOOGLE_API_KEY = "AIzaSyCB_7U0FnfsnYZJju92TjO44m6LUipIX4I"
-genai.configure(api_key=GOOGLE_API_KEY)
+GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY", "AIzaSyByWuA515NOLs28OsguZGje_ZDaX8QggBc")
 
-# Initialize the model
-try:
-    model = genai.GenerativeModel('gemini-pro')
-    print("✅ Gemini AI model initialized successfully")
-except Exception as e:
-    print(f"⚠️ Warning: Gemini AI initialization failed: {e}")
-    model = None
+model = None
+
+if GEMINI_AVAILABLE and GOOGLE_API_KEY:
+    try:
+        genai.configure(api_key=GOOGLE_API_KEY)
+        # Initialize the model with proper configuration
+        generation_config = {
+            "temperature": 0.7,
+            "top_p": 0.95,
+            "top_k": 40,
+            "max_output_tokens": 2048,
+        }
+        
+        model = genai.GenerativeModel(
+            model_name='gemini-2.0-flash',
+            generation_config=generation_config
+        )
+        print("✅ Gemini AI model initialized successfully (gemini-2.0-flash)")
+    except Exception as e:
+        print(f"⚠️ Warning: Gemini AI initialization failed: {e}")
+        print(f"   Falling back to basic responses")
+        model = None
+        GEMINI_AVAILABLE = False
+else:
+    if not GEMINI_AVAILABLE:
+        print("⚠️ Gemini package not available")
+    if not GOOGLE_API_KEY:
+        print("⚠️ GOOGLE_API_KEY not set")
+    print("   Using fallback responses")
 
 # System prompt for medical context
 SYSTEM_PROMPT = """You are an intelligent AI Assistant for ParaDetect AI, a malaria detection platform. 
@@ -72,8 +106,8 @@ def get_gemini_response(message: str, user_context: Optional[Dict] = None) -> st
         AI-generated response
     """
     try:
-        # Check if model is available
-        if model is None:
+        # Check if Gemini is available and model is initialized
+        if not GEMINI_AVAILABLE or model is None:
             print("⚠️ Gemini model not available, using fallback")
             return get_fallback_response(message, user_context)
             
@@ -98,14 +132,32 @@ Note: Only mention this if the user asks about their health/test result.
         # Add user question
         full_prompt += f"USER QUESTION: {message}\n\nYour helpful, engaging response:"
         
-        # Generate response
-        response = model.generate_content(full_prompt)
+        # Generate response with retry logic
+        max_retries = 2
+        for attempt in range(max_retries):
+            try:
+                response = model.generate_content(full_prompt)
+                
+                if response and hasattr(response, 'text') and response.text:
+                    return response.text
+                elif response and hasattr(response, 'parts'):
+                    # Handle different response formats
+                    text_parts = [part.text for part in response.parts if hasattr(part, 'text')]
+                    if text_parts:
+                        return ''.join(text_parts)
+                
+                print(f"⚠️ Empty or invalid response from Gemini (attempt {attempt + 1})")
+                
+            except Exception as e:
+                print(f"⚠️ Gemini API error (attempt {attempt + 1}): {e}")
+                if attempt < max_retries - 1:
+                    import time
+                    time.sleep(1)  # Wait before retry
+                    continue
         
-        if response and response.text:
-            return response.text
-        else:
-            print("⚠️ Empty response from Gemini, using fallback")
-            return get_fallback_response(message, user_context)
+        # If all retries failed, use fallback
+        print("⚠️ All Gemini attempts failed, using fallback")
+        return get_fallback_response(message, user_context)
         
     except Exception as e:
         print(f"❌ Gemini AI Error: {e}")
