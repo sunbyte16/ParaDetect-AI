@@ -1,7 +1,7 @@
 # 🔬 ParaDetect AI - Malaria Detection System
 
 AI-powered malaria detection system using deep learning for blood cell analysis.
-
+ 
 ---
 
 ## 🚀 Quick Start
@@ -349,6 +349,8 @@ npm run dev
 
 ---
 
-**Built with ❤️ using AI and modern web technologies**
+**created by bitbuilder team**
 #
+
+
 
